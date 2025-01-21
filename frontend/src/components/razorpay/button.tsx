@@ -46,7 +46,7 @@ export const RazorPayButton: React.FC<IRazorPayButtonProps> = ({
         success: (order) => {
           const options: RazorpayOptions = {
             key:
-              process.env.NEXT_PUBLIC_RAZORPAY_ID ?? "rzp_test_A9HXX0uFKGsF1K",
+              process.env.NEXT_PUBLIC_RAZORPAY_ID,
             amount: order?.amount,
             currency: order?.currency,
             name: "Genman AI",
