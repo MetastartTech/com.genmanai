@@ -17,6 +17,21 @@
 
 ---
 
+## Demo Video
+
+[Watch the Demo](https://drive.google.com/file/d/1SJzcAcJo5BUj6pBgIigYt4BnjqUkVkh1/view?usp=drive_link)
+
+---
+
+## Resources
+
+- [Whitepaper](https://metastart.notion.site/genmanai)
+- [Telegram Bot](https://t.me/genmanai_bot)
+- [Twitter](https://x.com/AiGenman42440)
+- [Discord Bot](https://discord.com/api/oauth2/authorize?client_id=1330824820648181820&permissions=515433295168&scope=bot%20applications.commands)
+
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -143,4 +158,4 @@ We welcome contributions! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) to 
 
 ## 🌐 Links
 
-* **Live App** : [Demo URL](https://www.genmanai.com)
+* **Live App** : [GenmanAI](https://www.genmanai.com)
