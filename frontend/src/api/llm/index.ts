@@ -1,4 +1,4 @@
+import chat, { modifyChat, editRequestName, deleteRequest } from "./chat";
 import completion from "./completion";
-import chat from "./chat";
 
-export { chat, completion };
+export { chat, modifyChat, editRequestName, deleteRequest, completion };

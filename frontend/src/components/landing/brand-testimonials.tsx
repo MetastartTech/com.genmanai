@@ -1,0 +1,152 @@
+import Image from "next/image";
+import React from "react";
+
+const BrandTestimonials = () => {
+  return (
+    <div className="brandTestimonials flex flex-col items-center justify-between h-[220px] overflow-x-hidden">
+      <p className="font-medium text-center mt-10 tracking-[0.14em]">
+        TRUSTED BY THE INNOVATORS
+      </p>
+
+      <div className="inline-flex flex-nowrap">
+        <ul className="flex items-center justify-center md:justify-start [&_li]:mx-8 [&_img]:max-w-none animate-infinite-scroll">
+          <li>
+            <Image
+              src="/images/genmanwp2.svg"
+              height={150}
+              width={150}
+              alt=""
+            />
+          </li>
+          <li>
+            <Image
+              src="/images/genmanwp2.svg"
+              height={150}
+              width={150}
+              alt=""
+            />
+          </li>
+          <li>
+            <Image
+              src="/images/genmanwp2.svg"
+              height={150}
+              width={150}
+              alt=""
+            />
+          </li>
+          <li>
+            <Image
+              src="/images/genmanwp2.svg"
+              height={150}
+              width={150}
+              alt=""
+            />
+          </li>
+          <li>
+            <Image
+              src="/images/genmanwp2.svg"
+              height={150}
+              width={150}
+              alt=""
+            />
+          </li>
+          <li>
+            <Image
+              src="/images/genmanwp2.svg"
+              height={150}
+              width={150}
+              alt=""
+            />
+          </li>
+          <li>
+            <Image
+              src="/images/genmanwp2.svg"
+              height={150}
+              width={150}
+              alt=""
+            />
+          </li>
+          <li>
+            <Image
+              src="/images/genmanwp2.svg"
+              height={150}
+              width={150}
+              alt=""
+            />
+          </li>
+        </ul>
+        <ul
+          className="flex items-center justify-center md:justify-start [&_li]:mx-8 [&_img]:max-w-none animate-infinite-scroll"
+          aria-hidden="true"
+        >
+          <li>
+            <Image
+              src="/images/genmanwp2.svg"
+              height={150}
+              width={150}
+              alt=""
+            />
+          </li>
+          <li>
+            <Image
+              src="/images/genmanwp2.svg"
+              height={150}
+              width={150}
+              alt=""
+            />
+          </li>
+          <li>
+            <Image
+              src="/images/genmanwp2.svg"
+              height={150}
+              width={150}
+              alt=""
+            />
+          </li>
+          <li>
+            <Image
+              src="/images/genmanwp2.svg"
+              height={150}
+              width={150}
+              alt=""
+            />
+          </li>
+          <li>
+            <Image
+              src="/images/genmanwp2.svg"
+              height={150}
+              width={150}
+              alt=""
+            />
+          </li>
+          <li>
+            <Image
+              src="/images/genmanwp2.svg"
+              height={150}
+              width={150}
+              alt=""
+            />
+          </li>
+          <li>
+            <Image
+              src="/images/genmanwp2.svg"
+              height={150}
+              width={150}
+              alt=""
+            />
+          </li>
+          <li>
+            <Image
+              src="/images/genmanwp2.svg"
+              height={150}
+              width={150}
+              alt=""
+            />
+          </li>
+        </ul>
+      </div>
+    </div>
+  );
+};
+
+export default BrandTestimonials;

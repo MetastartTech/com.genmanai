@@ -1,12 +1,30 @@
+"use client";
+
+import useUser from "@/provider/userContext/useUserContext";
 import { Button } from "../ui/button";
 import ModeToggle from "./mode-toggle";
-import NavLink from "./navlink";
 import ThemeToggle from "./theme-toggle";
+import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 const Header: React.FC = () => {
+  const { user } = useUser();
+  const pathName = usePathname();
+
+  let showThemeToggle = false;
+  if (pathName !== "/") {
+    showThemeToggle = true;
+  }
+
+  const handleClick = (e: any, id: string) => {
+    e.preventDefault();
+    document.getElementById(id)?.scrollIntoView({
+      behavior: "smooth",
+    });
+  };
   return (
     <header className="supports-backdrop-blur:bg-background/60 sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
-      <div className="container flex h-20 items-center">
+      <div className="container flex h-20 items-center justify-between">
         <div className="mr-4 hidden md:flex">
           <a className="mr-6" href="/">
             <span className="hidden font-bold sm:inline-block text-xl">
@@ -15,10 +33,25 @@ const Header: React.FC = () => {
             </span>
           </a>
           <nav className="flex items-center space-x-6 font-medium text-sm">
-            <NavLink href="/about" text="About" />
-            <NavLink href="/features" text="Features" />
-            <NavLink href="/pricing" text="Pricing" />
-            <NavLink href="/blog" text="Blog" />
+            <div
+              className="cursor-pointer"
+              onClick={(e: any) => handleClick(e, "about")}
+            >
+              About
+            </div>
+            <div
+              className="cursor-pointer"
+              onClick={(e: any) => handleClick(e, "features")}
+            >
+              Features
+            </div>
+
+            <div
+              className="cursor-pointer"
+              onClick={(e: any) => handleClick(e, "pricing")}
+            >
+              Pricing
+            </div>
           </nav>
         </div>
         <button
@@ -29,7 +62,7 @@ const Header: React.FC = () => {
           aria-controls="radix-:R15hja:"
           data-state="closed"
         >
-          <svg
+          {/* <svg
             width="15"
             height="15"
             viewBox="0 0 15 15"
@@ -43,31 +76,36 @@ const Header: React.FC = () => {
               fillRule="evenodd"
               clipRule="evenodd"
             ></path>
-          </svg>
+          </svg> */}
+          {/* <Image
+            src="/android-chrome-192x192.png"
+            width={40}
+            height={40}
+            alt="GM"
+          /> */}
+          <a
+            href="/"
+            className="tracking-tighter font-bold text-xl cursor-pointer"
+          >
+            GenMan
+          </a>
           <span className="sr-only">Toggle Menu</span>
         </button>
-        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <nav className="flex items-center gap-4">
-            <a
-              target="_blank"
-              rel="noreferrer"
-              href="https://twitter.com/shadcn"
-            >
-              <div className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 py-2 w-9 px-0">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  className="h-4 w-4 fill-current"
-                >
-                  <path d="M21.543 7.104c.015.211.015.423.015.636 0 6.507-4.954 14.01-14.01 14.01v-.003A13.94 13.94 0 0 1 0 19.539a9.88 9.88 0 0 0 7.287-2.041 4.93 4.93 0 0 1-4.6-3.42 4.916 4.916 0 0 0 2.223-.084A4.926 4.926 0 0 1 .96 9.167v-.062a4.887 4.887 0 0 0 2.235.616A4.928 4.928 0 0 1 1.67 3.148a13.98 13.98 0 0 0 10.15 5.144 4.929 4.929 0 0 1 8.39-4.49 9.868 9.868 0 0 0 3.128-1.196 4.941 4.941 0 0 1-2.165 2.724A9.828 9.828 0 0 0 24 4.555a10.019 10.019 0 0 1-2.457 2.549z"></path>
-                </svg>
-                <span className="sr-only">Twitter</span>
+        <div className="float-right md:flex md:flex-1 md:items-center justify-between space-x-2 md:justify-end">
+          <nav className="flex items-center gap-2 md:gap-4">
+            {showThemeToggle && (
+              <div className="flex mr-2">
+                <div className="mr-2">
+                  <ModeToggle />
+                </div>
+                <ThemeToggle />
               </div>
-            </a>
-            <ModeToggle />
-            <ThemeToggle />
-            <a href="/signin">
-              <Button>Signin</Button>
+            )}
+            <a
+              href={user ? "/dashboard/llm" : "/signin"}
+              // className="fixed right-2 md:static md:right-auto"
+            >
+              <Button>{user ? "Dashboard" : "Signin"}</Button>
             </a>
           </nav>
         </div>

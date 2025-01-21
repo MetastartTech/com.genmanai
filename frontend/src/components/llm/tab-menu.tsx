@@ -4,11 +4,20 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 
-const TabMenu = () => {
+
+interface ITabMenuProps {
+  closeAllTabs: () => void;
+  closeAllButSelectedTab: () => void;
+  closeSelectedTab: () => void;
+}
+const TabMenu: React.FC<ITabMenuProps> = ({
+  closeAllTabs,
+  closeAllButSelectedTab,
+  closeSelectedTab,
+}) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -18,12 +27,15 @@ const TabMenu = () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" forceMount>
         <DropdownMenuGroup>
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={closeSelectedTab}>
             Close Selected Tab
-            <DropdownMenuShortcut>⌘W</DropdownMenuShortcut>
           </DropdownMenuItem>
-          <DropdownMenuItem>Close All but Selected Tab</DropdownMenuItem>
-          <DropdownMenuItem>Close All Tabs</DropdownMenuItem>
+          <DropdownMenuItem onClick={closeAllButSelectedTab}>
+            Close All but Selected Tab
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={closeAllTabs}>
+            Close All Tabs
+          </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

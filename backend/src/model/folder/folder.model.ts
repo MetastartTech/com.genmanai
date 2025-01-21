@@ -5,15 +5,19 @@ const createFolder = async (folder: Partial<IFolder>): Promise<IFolder> => {
   return await Folder.create(folder);
 };
 
-const getUserFolders = async (user: string): Promise<IFolder[]> => {
-  return await Folder.find({ user });
+const getUserFolders = async (
+  user: string,
+  type: "llm" | "image"
+): Promise<IFolder[]> => {
+  return await Folder.find({ user, type }).populate("folders");
 };
 
 const getFolderById = async (
   user: string,
-  id: string
+  id: string,
+  type: "llm" | "image"
 ): Promise<IFolder | null> => {
-  return await Folder.findOne({ _id: id, user });
+  return await Folder.findOne({ _id: id, user, type });
 };
 
 const updateFolderById = async (

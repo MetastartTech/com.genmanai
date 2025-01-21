@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -7,29 +10,46 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Repeat, Image as ImageIcon, FolderClosed } from "lucide-react";
+import { get } from "@/api/history";
+import useUser from "@/provider/userContext/useUserContext";
+import { toast } from "sonner";
 
-const history = [
-  {
-    date: "7/10/23, 12:00 PM",
-    type: "image",
-    action: "IMAGE GENERATION",
-    request: "123456",
-  },
-  {
-    date: "7/10/23, 12:00 PM",
-    type: "llm",
-    action: "CHAT COMPLETION",
-    request: "123456",
-  },
-  {
-    date: "7/10/23, 12:00 PM",
-    type: "folder",
-    action: "NEW FOLDER",
-    request: "123456",
-  },
-];
+type THistory = {
+  _id: string;
+  timestamp: string;
+  type: "llm_request" | "image_request" | "folder";
+  action: string;
+};
+
+const formatDateString = (date: string) => {
+  return new Date(date).toLocaleDateString(undefined, {
+    month: "numeric",
+    day: "numeric",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h12",
+  });
+};
 
 const History = () => {
+  const { idToken } = useUser();
+
+  const [history, setHistory] = useState<THistory[]>([]);
+
+  useEffect(() => {
+    get(idToken ?? "")
+      .then((data) => {
+        const sortedHistory = data.sort((a: THistory, b: THistory) => {
+          return (
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          );
+        });
+        setHistory(sortedHistory);
+      })
+      .catch((e) => toast.error("Failed to fetch history"));
+  }, [idToken]);
+
   return (
     <div className="flex justify-center p-5 max-w-screen-lg container mx-auto">
       <Table>
@@ -38,17 +58,16 @@ const History = () => {
             <TableHead>Date</TableHead>
             <TableHead>Type</TableHead>
             <TableHead>Action</TableHead>
-            <TableHead className="text-right">Request</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody className="text-sm text-secondary-foreground">
-          {history.map((history) => (
-            <TableRow key={history.request}>
-              <TableCell>{history.date}</TableCell>
+          {history?.map((history) => (
+            <TableRow key={history._id}>
+              <TableCell>{formatDateString(history.timestamp)}</TableCell>
               <TableCell className="text-center">
-                {history.type === "image" ? (
+                {history.type === "image_request" ? (
                   <ImageIcon className="w-5 h-5" />
-                ) : history.type === "llm" ? (
+                ) : history.type === "llm_request" ? (
                   <Repeat className="w-5 h-5" />
                 ) : history.type === "folder" ? (
                   <FolderClosed className="w-5 h-5" />
@@ -57,9 +76,6 @@ const History = () => {
                 )}
               </TableCell>
               <TableCell className="capitalize">{history.action}</TableCell>
-              <TableCell className="text-right cursor-pointer underline">
-                {history.request}
-              </TableCell>
             </TableRow>
           ))}
         </TableBody>

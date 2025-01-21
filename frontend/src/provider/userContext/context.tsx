@@ -21,6 +21,20 @@ const defaultContext: IUserContext = {
     return;
   },
   initializing: true,
+  signUpWithEmailPassword: (
+    email: string,
+    password: string,
+    fullName: string,
+    code: string = ""
+  ) => {
+    return;
+  },
+  signInWithEmailPassword: (email: string, password: string) => {
+    return;
+  },
+  setUserCredits: (wallet) => {
+    return;
+  },
 };
 
 const UserContext = createContext<IUserContext>(defaultContext);

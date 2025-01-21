@@ -23,12 +23,12 @@ const folderSchema = new Schema<IFolder>(
         ref: "Folder",
       },
     ],
-    requests: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "LlmRequest",
-      },
-    ],
+    requests: [Schema.Types.ObjectId],
+    type: {
+      type: String,
+      enum: ["llm", "image"],
+      default: "llm",
+    },
   },
   {
     timestamps: true,
@@ -37,11 +37,11 @@ const folderSchema = new Schema<IFolder>(
 
 folderSchema
   .pre("findOne", function (next) {
-    this.populate("folders requests");
+    this.populate("folders");
     next();
   })
   .pre("find", function (next) {
-    this.populate("folders requests");
+    this.populate("folders");
     next();
   });
 

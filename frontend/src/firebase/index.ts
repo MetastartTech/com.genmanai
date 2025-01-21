@@ -2,13 +2,13 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBbTMoIZfgZnb4LOinKtnFSGdOOE8AM-SY",
-  authDomain: "genmanai.firebaseapp.com",
-  projectId: "genmanai",
-  storageBucket: "genmanai.appspot.com",
-  messagingSenderId: "154323435242",
-  appId: "1:154323435242:web:7d989fab9d5e0290e62193",
-  measurementId: "G-RT5WY1YBT6",
+  apiKey: "AIzaSyC3un8W85pjJNW9moJ7pAFIW6Jxltkk6oI",
+  authDomain: "com-genmanai.firebaseapp.com",
+  projectId: "com-genmanai",
+  storageBucket: "com-genmanai.firebasestorage.app",
+  messagingSenderId: "1015231100312",
+  appId: "1:1015231100312:web:9f727e08e13c9e426e27ed",
+  measurementId: "G-5XQD8XW246",
 };
 
 export const app = initializeApp(firebaseConfig);

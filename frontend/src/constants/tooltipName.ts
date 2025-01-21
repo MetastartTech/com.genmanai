@@ -1,0 +1,12 @@
+export const TEMPERATURE = "temperature";
+export const TOP_P = "top_p";
+export const MAX_TOKENS = "max_tokens";
+export const SYSTEM_PROMPT = "system_prompt";
+export const MODEL_SETTINGS = "model_settings";
+export const PARAMETER_SETTINGS = "parameter_settings";
+export const OUTPUT_SETTINGS = "output_settings";
+export const MODEL = "model";
+export const TOP_K = "top_k";
+export const CONFIGURE_TEST = "Configure your Test";
+export const ANALYZE_RESULTS = "Analyze the Results";
+export const REFINE_DEPLOY = "Refine and Deploy";

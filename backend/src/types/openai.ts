@@ -11,6 +11,10 @@ type APIErrorType = keyof typeof APIError;
 
 interface IChatCompletion {
   model:
+    | "gpt-4-0125-preview"
+    | "gpt-4-turbo-preview"
+    | "gpt-4-1106-preview"
+    | "gpt-4-vision-preview"
     | "gpt-4"
     | "gpt-4-0314"
     | "gpt-4-0613"
@@ -21,11 +25,9 @@ interface IChatCompletion {
     | "gpt-3.5-turbo-16k"
     | "gpt-3.5-turbo-0301"
     | "gpt-3.5-turbo-0613"
+    | "gpt-3.5-turbo-1106"
     | "gpt-3.5-turbo-16k-0613";
-  messages: {
-    role: "system" | "user" | "assistant" | "function";
-    content: string;
-  }[];
+  messages: any[];
   frequency_penalty?: number | null;
   n?: number | null;
   max_tokens?: number;
@@ -86,6 +88,7 @@ interface IImage {
 
 interface IImageCreation {
   prompt: string;
+  model?: "dall-e-2" | "dall-e-3";
   n?: number;
   size?: "256x256" | "512x512" | "1024x1024";
   response_format?: "url" | "b64_json";
@@ -100,7 +103,7 @@ interface IImageEdit {
   response_format?: "url" | "b64_json";
 }
 
-interface IImageVariation{
+interface IImageVariation {
   image: string;
   n?: number;
   size?: "256x256" | "512x512" | "1024x1024";

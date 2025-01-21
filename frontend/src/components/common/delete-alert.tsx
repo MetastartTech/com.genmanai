@@ -1,5 +1,6 @@
 import {
   AlertDialog,
+  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -9,14 +10,15 @@ import {
   AlertDialogTrigger,
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
-import { DropdownMenuItem, DropdownMenuShortcut } from "../ui/dropdown-menu";
+import { DropdownMenuItem } from "../ui/dropdown-menu";
 
 interface IDeleteAlert {
   title: string;
   subtitle: string;
+  onDelete: () => void;
 }
 
-const DeleteAlert: React.FC<IDeleteAlert> = ({ title, subtitle }) => {
+const DeleteAlert: React.FC<IDeleteAlert> = ({ title, subtitle, onDelete }) => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -25,7 +27,6 @@ const DeleteAlert: React.FC<IDeleteAlert> = ({ title, subtitle }) => {
           className="text-destructive"
         >
           Delete
-          <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
         </DropdownMenuItem>
       </AlertDialogTrigger>
       <AlertDialogContent>
@@ -35,7 +36,11 @@ const DeleteAlert: React.FC<IDeleteAlert> = ({ title, subtitle }) => {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <Button variant="destructive">Delete</Button>
+          <AlertDialogAction asChild>
+            <Button variant="destructive" onClick={() => onDelete()}>
+              Delete
+            </Button>
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

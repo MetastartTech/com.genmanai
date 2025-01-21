@@ -1,27 +1,8 @@
 import mongoose, { Schema } from "mongoose";
 import { ILlmRequest } from "../../types/schema";
 
-const llmRequestSchema: Schema<ILlmRequest> = new Schema<ILlmRequest>(
+const versionSchema = new Schema(
   {
-    user: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    name: {
-      type: String,
-      required: true,
-    },
-    llm: {
-      type: String,
-      enum: ["openai"],
-      required: true,
-    },
-    type: {
-      type: String,
-      enum: ["chat", "completion"],
-      required: true,
-    },
     config: {
       type: {
         model: {
@@ -33,12 +14,18 @@ const llmRequestSchema: Schema<ILlmRequest> = new Schema<ILlmRequest>(
             {
               role: {
                 type: String,
-                enum: ["system", "user", "assistant", "function"],
+                enum: ["system", "user", "assistant", "function", "model"],
               },
               content: String,
+              parts: [
+                {
+                  text: String,
+                },
+              ],
             },
           ],
         },
+        system: { type: String },
         prompt: { type: String },
         frequency_penalty: { type: Number, default: 0 },
         n: { type: Number, default: 1 },
@@ -46,7 +33,13 @@ const llmRequestSchema: Schema<ILlmRequest> = new Schema<ILlmRequest>(
         temperature: { type: Number, default: 1 },
         top_p: { type: Number, defaut: 1 },
         logit_bias: { type: Map, of: Number, default: {} },
+        top_k: { type: Number, default: 1 },
       },
+      required: true,
+    },
+    llm: {
+      type: String,
+      enum: ["openai", "gemini", "anthropic"],
       required: true,
     },
     response: [
@@ -75,6 +68,28 @@ const llmRequestSchema: Schema<ILlmRequest> = new Schema<ILlmRequest>(
       type: Number,
       min: 0,
     },
+  },
+  { timestamps: true }
+);
+
+const llmRequestSchema: Schema<ILlmRequest> = new Schema<ILlmRequest>(
+  {
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+    type: {
+      type: String,
+      enum: ["chat", "completion"],
+      required: true,
+    },
+    folder: { type: Schema.Types.ObjectId, ref: "Folder", default: null },
+    versions: [versionSchema],
     error: { code: Number, error: String },
   },
   {

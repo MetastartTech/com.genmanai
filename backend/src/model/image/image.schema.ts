@@ -1,27 +1,17 @@
 import mongoose, { Schema } from "mongoose";
 import { IImageRequest } from "../../types/schema";
 
-const imageRequestSchema: Schema<IImageRequest> = new Schema<IImageRequest>(
+const versionSchema = new Schema(
   {
-    user: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    llm: {
-      type: String,
-      enum: ["openai"],
-      required: true,
-    },
-    type: {
-      type: String,
-      enum: ["generation", "edit", "variantion"],
-      required: true,
-    },
     config: {
       type: {
         prompt: { type: String },
         n: { type: Number, default: 1 },
+        model: {
+          type: String,
+          enum: ["dall-e-2", "dall-e-3"],
+          default: "dall-e-2",
+        },
         size: {
           type: String,
           enum: ["256x256", "512x512", "1024x1024"],
@@ -35,6 +25,11 @@ const imageRequestSchema: Schema<IImageRequest> = new Schema<IImageRequest>(
       },
       required: true,
     },
+    llm: {
+      type: String,
+      enum: ["openai"],
+      required: true,
+    },
     response: [
       {
         type: Schema.Types.Mixed,
@@ -44,6 +39,25 @@ const imageRequestSchema: Schema<IImageRequest> = new Schema<IImageRequest>(
       type: Number,
       min: 0,
     },
+  },
+  { timestamps: true }
+);
+
+const imageRequestSchema: Schema<IImageRequest> = new Schema<IImageRequest>(
+  {
+    name: { type: String, required: true },
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    type: {
+      type: String,
+      enum: ["generation", "edit", "variantion"],
+      required: true,
+    },
+    versions: [versionSchema],
+    folder: { type: Schema.Types.ObjectId, ref: "Folder", default: null },
     error: { code: Number, error: String },
   },
   {

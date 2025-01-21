@@ -4,21 +4,23 @@ import React, { useState, useEffect, ReactNode } from "react";
 import { IThemeContext } from "@/types/context";
 import ThemeContext from "./context";
 import { colorThemes } from "@/themes";
+import useUser from "../userContext/useUserContext";
 
 interface ThemeProviderProps {
   children: ReactNode;
 }
 
 const updateThemeWithColor = (
+  email: string,
   color: string,
-  mode: "light" | "dark" | "system"
+  mode: "light" | "dark" | "system",
 ) => {
   const root = window.document.documentElement;
   const colorTheme = colorThemes[color];
   for (let variable in colorTheme.root) {
     root.style.setProperty(
       variable,
-      mode === "dark" ? colorTheme.dark[variable] : colorTheme.root[variable]
+      mode === "dark" ? colorTheme.dark[variable] : colorTheme.root[variable],
     );
   }
   localStorage.setItem("genmanColor", color);
@@ -28,6 +30,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
   const [color, setColor] = useState<string>("gray");
   const [initialized, setInitialized] = useState(false);
+  const { user } = useUser();
 
   const setThemeAndColor = (
     newTheme: "light" | "dark" | "system",
@@ -35,12 +38,14 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   ) => {
     setTheme(newTheme);
     setColor(newColor);
+    localStorage.setItem("genmanColor", color);
+    localStorage.setItem("genmanTheme", newTheme);
   };
 
   const toggleLightMode = () => {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
-    const colorTheme = colorThemes[color ?? "orange"];
+    const colorTheme = colorThemes[color];
     for (let variable in colorTheme.root) {
       root.style.setProperty(variable, colorTheme.root[variable]);
     }
@@ -51,7 +56,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const toggleDarkMode = () => {
     const root = window.document.documentElement;
     root.classList.remove("light", "dark");
-    const colorTheme = colorThemes[color ?? "orange"];
+    const colorTheme = colorThemes[color];
     for (let variable in colorTheme.root) {
       root.style.setProperty(variable, colorTheme.dark[variable]);
     }
@@ -66,7 +71,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       .matches
       ? "dark"
       : "light";
-    const colorTheme = colorThemes[color ?? "orange"];
+    const colorTheme = colorThemes[color];
     for (let variable in colorTheme.root) {
       root.style.setProperty(
         variable,
@@ -86,7 +91,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         ? "dark"
         : "light";
     }
-    updateThemeWithColor(color, mode);
+    updateThemeWithColor(user?.email ?? "", color, mode);
+    setColor(color);
   };
 
   useEffect(() => {
@@ -95,12 +101,12 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       | "dark"
       | "system"
       | null;
-    const storedColor = localStorage.getItem("genmanColor") || "orange";
+    const storedColor = localStorage.getItem("genmanColor") || "gray";
 
     if (storedTheme) {
       setThemeAndColor(storedTheme, storedColor);
     } else {
-      setThemeAndColor("light", "orange");
+      setThemeAndColor("light", "gray");
     }
 
     setInitialized(true);
@@ -134,6 +140,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         );
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

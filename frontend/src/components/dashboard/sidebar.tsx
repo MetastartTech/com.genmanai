@@ -6,45 +6,33 @@ import {
   Image as ImageIcon,
   Music,
   History,
-  Loader,
+  GitCompare,
+  Image,
 } from "lucide-react";
-import NewFolderModal from "./new-folder-modal";
-import NewRequestModal from "./new-request-modal";
-import { Input } from "../ui/input";
-import Folder from "./folder";
-import Request from "./request";
-import { useEffect, useState } from "react";
-import useUser from "@/provider/userContext/useUserContext";
-import requests from "@/api/llm/requests";
 
-const Sidebar: React.FC = () => {
-  const { idToken } = useUser();
-  const [loading, setLoading] = useState<boolean>(true);
-  const [userRequests, setUserRequests] = useState([]);
+import LLMRequests from "../llm/llm-requests";
+import ImageRequests from "../image/image-requests";
+
+interface ISidebar {
+  type: "history" | "image" | "llm";
+}
+
+const Sidebar: React.FC<ISidebar> = ({ type }) => {
   const pathname = usePathname();
-
-  const history = pathname === "/dashboard/history";
-
-  useEffect(() => {
-    setLoading(true);
-    requests(idToken ?? "")
-      .then((data) => setUserRequests(data))
-      .finally(() => setLoading(false));
-  }, [idToken]);
 
   return (
     <div
-      className={`grid shrink-0 ${
-        history === false ? "w-96 grid-cols-4" : "w-24"
+      className={`hidden md:grid shrink-0 ${
+        type !== "history" ? "w-96 grid-cols-4" : "w-24"
       }`}
     >
       <div className="space-y-4 py-4">
         <div className="px-3 py-2">
           <div className="space-y-1">
-            <a href="/llm/1">
+            <a href="/dashboard/llm">
               <button
                 className={`text-sm font-medium py-2 w-full rounded-md disabled:pointer-events-none disabled:opacity-50 ${
-                  pathname?.includes("/llm")
+                  pathname?.includes("/dashboard/llm")
                     ? "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                     : "hover:bg-accent hover:text-accent-foreground"
                 }`}
@@ -55,18 +43,20 @@ const Sidebar: React.FC = () => {
                 </div>
               </button>
             </a>
-            <button
-              className={`text-sm font-medium py-2 w-full rounded-md disabled:pointer-events-none disabled:opacity-50 ${
-                pathname?.includes("/image")
-                  ? "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                  : "hover:bg-accent hover:text-accent-foreground"
-              }`}
-            >
-              <div className="flex flex-col gap-1 items-center justify-center">
-                <ImageIcon className="h-[0.8rem] w-[0.8rem] shrink-0" />
-                Image
-              </div>
-            </button>
+            <a href="/dashboard/image">
+              <button
+                className={`text-sm font-medium py-2 w-full rounded-md disabled:pointer-events-none disabled:opacity-50 ${
+                  pathname?.includes("/dashboard/image")
+                    ? "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    : "hover:bg-accent hover:text-accent-foreground"
+                }`}
+              >
+                <div className="flex flex-col gap-1 items-center justify-center">
+                  <ImageIcon className="h-[0.8rem] w-[0.8rem] shrink-0" />
+                  Image
+                </div>
+              </button>
+            </a>
             <button
               className={`text-sm font-medium py-2 w-full rounded-md disabled:pointer-events-none disabled:opacity-50 ${
                 pathname?.includes("/music")
@@ -83,10 +73,54 @@ const Sidebar: React.FC = () => {
                 </div>
               </div>
             </button>
-            <a href="/history">
+            <a href="/dashboard/compare/llm">
               <button
                 className={`text-sm font-medium py-2 w-full rounded-md disabled:pointer-events-none disabled:opacity-50 ${
-                  pathname?.includes("/history")
+                  pathname?.includes("/dashboard/compare/llm")
+                    ? "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    : "hover:bg-accent hover:text-accent-foreground"
+                }`}
+              >
+                <div className="flex flex-col gap-1 items-center justify-center text-xs">
+                  <GitCompare className="h-[1rem] w-[1rem] shrink-0" />
+                  Compare LLM
+                </div>
+              </button>
+            </a>
+            <a href="/dashboard/compare/image">
+              <button
+                className={`text-sm font-medium py-2 w-full rounded-md disabled:pointer-events-none disabled:opacity-50 ${
+                  pathname?.includes("/dashboard/compare/image")
+                    ? "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    : "hover:bg-accent hover:text-accent-foreground"
+                }`}
+              >
+                <div className="flex flex-col gap-1 items-center justify-center text-xs">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    className="lucide lucide-images h-[1rem] w-[1rem]"
+                  >
+                    <path d="M18 22H4a2 2 0 0 1-2-2V6" />
+                    <path d="m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18" />
+                    <circle cx="12" cy="8" r="2" />
+                    <rect width="16" height="16" x="6" y="2" rx="2" />
+                  </svg>
+                  Compare Image
+                </div>
+              </button>
+            </a>
+            <a href="/dashboard/history">
+              <button
+                className={`text-sm font-medium py-2 w-full rounded-md disabled:pointer-events-none disabled:opacity-50 ${
+                  pathname?.includes("/dashboard/history")
                     ? "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                     : "hover:bg-accent hover:text-accent-foreground"
                 }`}
@@ -100,57 +134,13 @@ const Sidebar: React.FC = () => {
           </div>
         </div>
       </div>
-      {history === false && (
-        <div className="space-y-4 py-4 col-span-3 border-l h-full">
-          {loading ? (
-            <div className="flex h-full items-center justify-center">
-              <div className="animate-spin h-fit w-fit">
-                <Loader strokeWidth={"1.2"} size={24} />
-              </div>
-            </div>
-          ) : (
-            <div className="px-3 py-2 flex flex-col">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-lg font-semibold tracking-tight">
-                  Requests
-                </h2>
-                <div className="flex items-center">
-                  <NewFolderModal />
-                  <NewRequestModal />
-                </div>
-              </div>
-              <Input
-                type="search"
-                placeholder="Search Requests ..."
-                className="mb-4"
-              />
-
-              <div className="space-y-1">
-                {userRequests.length &&
-                  userRequests.map((request) => (
-                    <Request
-                      key={request._id}
-                      name={request.name}
-                      type={request.type}
-                      id={request._id}
-                    />
-                  ))}
-                {/* <Folder
-                  searchTerm={""}
-                  currentFolder={{ id: "1", name: "GPT 3.5" }}
-                >
-                  <Request name="What is genman?" type="chat" active={true} />
-                  <Request name="Product names" type="completion" />
-                </Folder>
-                <Folder
-                  searchTerm={""}
-                  currentFolder={{ id: "1", name: "Claude 2" }}
-                /> */}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {type !== "history" ? (
+        type === "llm" ? (
+          <LLMRequests />
+        ) : (
+          <ImageRequests />
+        )
+      ) : null}
     </div>
   );
 };

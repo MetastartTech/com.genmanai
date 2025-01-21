@@ -74,3 +74,30 @@
     @apply bg-background text-foreground;
   }
 }
+
+::-webkit-scrollbar {
+  width: 5px;
+  border-radius: 5px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+.dotted-bdr {
+  border-bottom: 1px dashed #00000060;
+}
+
+@supports (-webkit-overflow-scrolling: touch) {
+  select,
+  textarea,
+  input {
+    font-size: 16px;
+  }
+}

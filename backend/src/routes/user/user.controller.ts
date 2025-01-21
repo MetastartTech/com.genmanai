@@ -3,6 +3,10 @@ import { Request, Response } from "express";
 import { IUser } from "../../types/schema";
 import { UserModel } from "../../model/user/user.schema";
 import { createUser } from "../../model/user/user.model";
+import {
+  createNewReferral,
+  updateReferralAfterUse,
+} from "../../model/referral/referral.model";
 
 const httpSignupUser = async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
@@ -11,7 +15,7 @@ const httpSignupUser = async (req: Request, res: Response) => {
     return res.status(401).json({ error: "Authorization header not found" });
   }
 
-  const { fullName } = req.body;
+  const { fullName, referredBy, joinedBy, deviceFingerprint } = req.body;
 
   try {
     const decodedToken = await auth().verifyIdToken(idToken);
@@ -20,10 +24,26 @@ const httpSignupUser = async (req: Request, res: Response) => {
       fullName: fullName,
       displayPicture: userRecord.photoURL,
       email: decodedToken.email,
+      creditsWallet: {
+        llm: 10,
+        image: 3,
+      },
     };
 
     const newUser = await createUser(user);
 
+    //create user's own referral for him to share
+    let referral = await createNewReferral(newUser._id, deviceFingerprint);
+    // console.log("referral", referral);
+    if (joinedBy && referredBy) {
+      let updatedReferral = await updateReferralAfterUse(
+        joinedBy,
+        deviceFingerprint
+      );
+      // console.log("updatedReferral", updatedReferral);
+    }
+
+    // console.log(newUser, "newUser");
     res.status(201).json(newUser);
   } catch (error) {
     console.log(error);
@@ -48,7 +68,7 @@ const httpLoginUser = async (req: Request, res: Response) => {
       );
 
       if (!user) {
-        throw Error("Authentication Error");
+        return res.status(404).json({ error: "User not found" });
       }
 
       const fiveDays = 60 * 60 * 24 * 5 * 1000;
@@ -60,7 +80,7 @@ const httpLoginUser = async (req: Request, res: Response) => {
       res.cookie("session", sessionCookie, options);
       return res.status(200).json(user);
     } else {
-      throw Error("Authentication Error");
+      return res.status(404).json({ error: "Authentication Error" });
     }
   } catch (error) {
     console.log(error);

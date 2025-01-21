@@ -10,7 +10,7 @@ import {
   AlertDialogTrigger,
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
-import { DropdownMenuItem, DropdownMenuShortcut } from "../ui/dropdown-menu";
+import { DropdownMenuItem } from "../ui/dropdown-menu";
 import { useRouter } from "next/navigation";
 
 const LogoutAlert = () => {
@@ -20,9 +20,11 @@ const LogoutAlert = () => {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+        <DropdownMenuItem
+          onSelect={(e) => e.preventDefault()}
+          className="cursor-pointer"
+        >
           Log out
-          <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
         </DropdownMenuItem>
       </AlertDialogTrigger>
       <AlertDialogContent>

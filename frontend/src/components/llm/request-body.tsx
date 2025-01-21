@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { MessagesSquare, Play } from "lucide-react";
+import { MessagesSquare, Play, Loader2 } from "lucide-react";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { Slider } from "../ui/slider";
@@ -17,28 +17,61 @@ import {
 } from "../ui/select";
 import { Button } from "../ui/button";
 import ComboBox from "../dashboard/combobox";
-import { ChatCompletionModels, CompletionModels } from "../../types/openai";
+import { ChatCompletionModels } from "../../types/openai";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "../ui/accordion";
-import { useParams } from "next/navigation";
 import useUser from "@/provider/userContext/useUserContext";
+import { modifyChat } from "@/api/llm";
+import { requestById } from "@/api/llm/requests";
+import useUserRequests from "@/provider/userRequestsContext/useUserRequestsContext";
+import { Separator } from "../ui/separator";
+import Markdown from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import rehypeKatex from "rehype-katex";
+import remarkMath from "remark-math";
+import remarkGfm from "remark-gfm";
+import "katex/dist/katex.min.css";
+import Welcome from "../dashboard/welcome";
+import TabLoader from "../dashboard/tab-loader";
+import ResponseLoader from "../dashboard/response-loader";
+import { formatMillisecondsToSeconds } from "@/util/time";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { closeAllRequests } from "@/actions/activeRequests";
+import TooltipHover from "../common/tooltip-hover";
 import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "../ui/resizable";
+  MAX_TOKENS,
+  MODEL_SETTINGS,
+  OUTPUT_SETTINGS,
+  PARAMETER_SETTINGS,
+  SYSTEM_PROMPT,
+  TEMPERATURE,
+  TOP_K,
+  TOP_P,
+} from "@/constants/tooltipName";
+import { AnthropicMessageModels } from "@/types/anthropic";
+import CodeViewer from "../dashboard/code-view";
 
 const RequestBody: React.FC = () => {
-  const { idToken } = useUser();
-  const params = useParams();
+  const { idToken, user, setUserCredits } = useUser();
+  const router = useRouter();
+  const [isFormModified, setFormModified] = useState<boolean>(false);
+  const { activeTab, activeTabName, tabsLoading } = useUserRequests();
   const [tab, setTab] = useState<"prompt" | "model" | "parameter" | "output">(
     "prompt"
   );
   const [loading, setLoading] = useState<boolean>(true);
+  const [requestLoading, setRequestLoading] = useState<boolean>(false);
+  const [versions, setVersions] = useState<{ id: string; createdAt: string }[]>(
+    []
+  );
+  const [request, setRequest] = useState<any>(null);
+  const [version, setVersion] = useState<string | null>(null);
   const [responseParams, setReponseParams] = useState({
     tokenUsage: {
       completion: 0,
@@ -47,82 +80,378 @@ const RequestBody: React.FC = () => {
     },
     responseTime: 0,
   });
-  const [form, setForm] = useState({
+  const [initialForm, setInitialForm] = useState({
     name: "",
+    llm: "openai",
     temperature: [0.2],
-    max: [256],
-    topp: [0.9],
+    max_tokens: [256],
+    top_p: [0.9],
+    top_k: [1],
     request: "chat",
     model: "",
     type: "llm",
     userMessage: "",
     systemMessage: "",
+    n: 1,
+  });
+  const [form, setForm] = useState({
+    name: "",
+    llm: "openai",
+    temperature: [0.2],
+    max_tokens: [256],
+    top_p: [0.9],
+    top_k: [1],
+    request: "chat",
+    model: "",
+    type: "llm",
+    userMessage: "",
+    systemMessage: "",
+    n: "1",
   });
   const [responses, setResponses] = useState([]);
 
+  const initializeState = (request: any, data: any) => {
+    if (data.llm) {
+      setInitialForm({
+        name: request.name,
+        temperature: [data.config.temperature],
+        max_tokens: [data.config.max_tokens],
+        top_p: [data.config.top_p ?? 1],
+        top_k: [data.config.top_k ?? 1],
+        request: request.type,
+        model: data.config.model,
+        llm: data.llm,
+        type: "llm",
+        userMessage:
+          data.llm === "gemini"
+            ? data.config.messages.find(
+                (message: { role: "user" | "model"; content: string }) =>
+                  message.role === "user"
+              ).parts[0].text
+            : data.config.messages.find(
+                (message: { role: "user" | "system"; content: string }) =>
+                  message.role === "user"
+              ).content,
+        systemMessage:
+          data.llm === "gemini"
+            ? data.config.messages.find(
+                (message: { role: "user" | "model"; content: string }) =>
+                  message.role === "model"
+              ).parts[0].text
+            : data.llm === "anthropic"
+            ? data.config.system
+            : data.config.messages.find(
+                (message: { role: "user" | "system"; content: string }) =>
+                  message.role === "system"
+              ).content ?? "",
+        n: data.config.n.toString(),
+      });
+      setForm({
+        name: request.name,
+        temperature: [data.config.temperature],
+        max_tokens: [data.config.max_tokens],
+        top_p: [data.config.top_p ?? 1],
+        top_k: [data.config.top_k ?? 1],
+        request: request.type,
+        model: data.config.model,
+        type: "llm",
+        llm: data.llm,
+        userMessage:
+          data.llm === "gemini"
+            ? data.config.messages.find(
+                (message: { role: "user" | "model"; content: string }) =>
+                  message.role === "user"
+              ).parts[0].text
+            : data.config.messages.find(
+                (message: { role: "user" | "system"; content: string }) =>
+                  message.role === "user"
+              ).content,
+        systemMessage:
+          data.llm === "gemini"
+            ? data.config.messages.find(
+                (message: { role: "user" | "model"; content: string }) =>
+                  message.role === "model"
+              ).parts[0].text
+            : data.llm === "anthropic"
+            ? data.config.system
+            : data.config.messages.find(
+                (message: { role: "user" | "system"; content: string }) =>
+                  message.role === "system"
+              ).content ?? "",
+        n: data.config.n.toString(),
+      });
+      setReponseParams({
+        tokenUsage: data.tokenUsage,
+        responseTime: data.responseTime,
+      });
+      setResponses(data.response);
+    }
+  };
+
+  const formatDateString = (date: string) => {
+    return new Date(date).toLocaleDateString(undefined, {
+      month: "numeric",
+      day: "numeric",
+      year: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h12",
+    });
+  };
+
+  const isFormDataChanged = (initialForm: any, form: any) => {
+    for (let key in initialForm) {
+      if (Array.isArray(initialForm[key])) {
+        if (initialForm[key][0] !== form[key][0]) {
+          return true;
+        }
+      } else if (initialForm[key] !== form[key]) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const handleFormChange = (key: string, value: any) => {
+    if (key === "llm") {
+      setForm((prevForm) => ({
+        ...prevForm,
+        [key]: value,
+        model:
+          value === "openai"
+            ? "gpt-3.5-turbo"
+            : value === "anthropic"
+            ? "claude-3-opus-20240229"
+            : "gemini-pro",
+        max_tokens:
+          ["openai", "anthropic"].includes(value) &&
+          prevForm.max_tokens[0] > 4096
+            ? [4090]
+            : prevForm.max_tokens,
+      }));
+    } else {
+      setForm((prevForm) => ({ ...prevForm, [key]: value }));
+    }
+  };
+
+  const handleRun = async () => {
+    if (!user?.creditsWallet.llm || user.creditsWallet.llm <= 0) {
+      toast.error(
+        "Your LLM request limit has been reached, Please buy more requests"
+      );
+      router.push("/subscribe");
+    } else {
+      await handleModifyChat();
+    }
+  };
+
+  const handleModifyChat = async () => {
+    const {
+      name,
+      top_p,
+      top_k,
+      n,
+      request,
+      userMessage,
+      systemMessage,
+      llm,
+      ...rest
+    } = form;
+
+    let input;
+
+    if (llm === "openai") {
+      input = {
+        ...rest,
+        llm,
+        max_tokens: rest.max_tokens[0],
+        temperature: rest.temperature[0],
+        top_p: top_p[0],
+        top_k: top_k[0],
+        messages: [
+          { role: "system", content: systemMessage },
+          { role: "user", content: userMessage },
+        ],
+        n: Number(n),
+      };
+    } else if (llm === "gemini") {
+      input = {
+        ...rest,
+        llm,
+        max_tokens: rest.max_tokens[0],
+        temperature: rest.temperature[0],
+        top_p: top_p[0],
+        top_k: top_k[0],
+        messages: [
+          { role: "model", parts: [{ text: systemMessage }] },
+          { role: "user", parts: [{ text: userMessage }] },
+        ],
+      };
+    } else if (llm === "anthropic") {
+      input = {
+        ...rest,
+        llm,
+        max_tokens: rest.max_tokens[0],
+        temperature: rest.temperature[0],
+        top_p: top_p[0],
+        top_k: top_k[0],
+        system: systemMessage,
+        messages: [{ role: "user", content: userMessage }],
+      };
+    }
+
+    setRequestLoading(true);
+    toast.promise(modifyChat(idToken ?? "", activeTab, input), {
+      loading: "Modifying request",
+      success: (response) => {
+        const data = response.request.versions.sort(
+          (a: { createdAt: string }, b: { createdAt: string }) => {
+            return +new Date(b.createdAt) - +new Date(a.createdAt);
+          }
+        )[0];
+        setVersions(
+          response.request.versions.map((version: any) => ({
+            id: version._id,
+            createdAt: version.createdAt,
+          }))
+        );
+        setRequest(response.request);
+        setVersion(data._id);
+        initializeState(response.request, {
+          ...data,
+          response: response.responses,
+        });
+        setUserCredits(response.credits);
+        setRequestLoading(false);
+        return "Request Modified";
+      },
+      error: () => {
+        setRequestLoading(false);
+        return "Failed to modify request";
+      },
+    });
+  };
+
   useEffect(() => {
     setLoading(true);
-    fetch(`http://localhost:8080/v1/api/request/${params.id}`, {
-      headers: { Authorization: `Bearer ${idToken}` },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setForm({
-          name: data.name,
-          temperature: [data.config.temperature],
-          max: [data.config.max_tokens],
-          topp: [0.9],
-          request: data.type,
-          model: data.config.model,
-          type: "llm",
-          userMessage: data.config.messages.find(
-            (message) => message.role === "user"
-          ).content,
-          systemMessage: data.config.messages.find(
-            (message) => message.role === "system"
-          ).content,
+    if (activeTab != "" && activeTab != "0") {
+      requestById(idToken ?? "", activeTab)
+        .then((request) => {
+          const data = request.versions.sort(
+            (a: { createdAt: string }, b: { createdAt: string }) => {
+              return +new Date(b.createdAt) - +new Date(a.createdAt);
+            }
+          )[0];
+          setRequest(request);
+          setVersion(data._id);
+          setVersions(
+            request.versions.map((version: any) => ({
+              id: version._id,
+              createdAt: version.createdAt,
+            }))
+          );
+          initializeState(request, data);
+          setLoading(false);
+        })
+        .catch((e) => {
+          setRequest(null);
+          setVersion(null);
+          setVersions([]);
+          closeAllRequests(user?.email ?? "", "llm");
+          setLoading(false);
         });
-        setReponseParams({
-          tokenUsage: data.tokenUsage,
-          responseTime: data.responseTime,
-        });
-        setResponses(data.response);
-        setLoading(false);
-      });
-  }, []);
+    }
+  }, [activeTab, idToken, user?.email]);
+
+  useEffect(() => {
+    setFormModified(isFormDataChanged(initialForm, form));
+  }, [initialForm, form, loading]);
+
+  useEffect(() => {
+    if (request && version) {
+      const data = request.versions.find(
+        (reqVersion: any) => reqVersion._id === version
+      );
+      if (data) initializeState(request, data);
+    }
+  }, [request, version]);
+
+  if (tabsLoading) {
+    return <TabLoader />;
+  } else if (!activeTab || activeTab == "" || activeTab == "0") {
+    return <Welcome type="llm" />;
+  } else if (loading) {
+    return <TabLoader />;
+  }
 
   return (
-    <ResizablePanelGroup direction="vertical">
-      <ResizablePanel className="p-5 relative">
+    <div className="">
+      <div className="p-5 relative overflow-y-auto">
         <div className="flex items-center justify-between">
           <div className="text-sm flex items-center gap-2">
             <MessagesSquare className="w-5 h-5" />
-            {form.name}
+            {activeTabName}
           </div>
-          <Button className="flex items-center gap-1">
-            Run <Play className="w-4 h-4" />
-          </Button>
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <CodeViewer
+              llm={form.llm as "openai" | "anthropic" | "gemini"}
+              model={form.model}
+              system={form.systemMessage.replace("\n", " ")}
+              user={form.userMessage.replace("\n", " ")}
+            />
+            <Button
+              className="flex items-center gap-1"
+              disabled={
+                form.name === "" ||
+                form.max_tokens[0] === 0 ||
+                form.model === "" ||
+                form.n === "" ||
+                form.userMessage === "" ||
+                form.systemMessage === "" ||
+                form.llm === "" ||
+                !isFormModified ||
+                requestLoading
+              }
+              onClick={handleRun}
+            >
+              {requestLoading ? (
+                <div className="h-fit w-fit animate-spin">
+                  <Loader2 className="w-4 h-4" />
+                </div>
+              ) : (
+                <>
+                  Run <Play className="w-4 h-4" />
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         <div className="mt-6">
           <div className="grid w-full gap-1.5">
             <Label>Version</Label>
             <div className="flex items-center gap-4">
-              <Select defaultValue="1">
+              <Select
+                value={version ?? versions[0]?.id}
+                onValueChange={(value) => setVersion(value)}
+              >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Select a version" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>History Version</SelectLabel>
-                    <SelectItem value="1">Latest Version</SelectItem>
-                    <SelectItem value="2">3/10/23, 10:00 AM</SelectItem>
-                    <SelectItem value="3">2/10/23, 10:00 PM</SelectItem>
-                    <SelectItem value="4">2/10/23, 9:00 PM</SelectItem>
+                    {versions.map((version) => (
+                      <SelectItem value={version.id} key={version.id}>
+                        {formatDateString(version.createdAt)}
+                      </SelectItem>
+                    ))}
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <Badge>Latest Version</Badge>
+              {version && version === versions[0].id && (
+                <Badge>Latest Version</Badge>
+              )}
             </div>
           </div>
 
@@ -145,7 +474,10 @@ const RequestBody: React.FC = () => {
               }`}
               onClick={() => setTab("model")}
             >
-              Model Settings
+              <TooltipHover
+                name={MODEL_SETTINGS}
+                displayName="Model Settings"
+              />
             </button>
             <button
               className={`inline-flex items-center h-10 px-4 -mb-px text-sm text-center border-b-2 whitespace-nowrap focus:outline-none ${
@@ -155,7 +487,10 @@ const RequestBody: React.FC = () => {
               }`}
               onClick={() => setTab("parameter")}
             >
-              Parameter Settings
+              <TooltipHover
+                name={PARAMETER_SETTINGS}
+                displayName="Parameter Settings"
+              />
             </button>
             <button
               className={`inline-flex items-center h-10 px-4 -mb-px text-sm text-center border-b-2 whitespace-nowrap focus:outline-none ${
@@ -165,7 +500,10 @@ const RequestBody: React.FC = () => {
               }`}
               onClick={() => setTab("output")}
             >
-              Output Settings
+              <TooltipHover
+                name={OUTPUT_SETTINGS}
+                displayName="Output Settings"
+              />
             </button>
           </div>
 
@@ -176,6 +514,9 @@ const RequestBody: React.FC = () => {
                 <Textarea
                   placeholder="Type your prompt here."
                   value={form.userMessage}
+                  onChange={(e) =>
+                    handleFormChange("userMessage", e.target.value)
+                  }
                   id="prompt"
                 />
               </div>
@@ -184,14 +525,20 @@ const RequestBody: React.FC = () => {
                   value="system-prompt"
                   className="border-b-transparent"
                 >
-                  <AccordionTrigger className="text-sm">
-                    System Prompt
-                  </AccordionTrigger>
+                  <div className="flex items-center">
+                    <AccordionTrigger className="text-sm mr-2">
+                      System Prompt
+                    </AccordionTrigger>
+                    <TooltipHover name={SYSTEM_PROMPT} />
+                  </div>
                   <AccordionContent>
                     <Textarea
                       placeholder="Type your prompt here."
                       id="system-prompt"
                       value={form.systemMessage}
+                      onChange={(e) =>
+                        handleFormChange("systemMessage", e.target.value)
+                      }
                     />
                   </AccordionContent>
                 </AccordionItem>
@@ -201,28 +548,30 @@ const RequestBody: React.FC = () => {
 
           {tab === "model" && (
             <>
-              <div className="flex flex-col gap-1.5 mt-6">
-                <Label htmlFor="name">Request Type</Label>
+              <div className="flex flex-col gap-1.5 mt-6 text-sm">
+                <Label htmlFor="name">LLM</Label>
                 <ComboBox
-                  emptystring="No request type found."
-                  placeholder="Select request type..."
-                  searchstring="Search request type..."
+                  emptystring="No llm found."
+                  placeholder="Select llm..."
+                  searchstring="Search llm..."
                   options={
-                    form.type === "llm"
-                      ? [
-                          { value: "completion", label: "Completion" },
-                          { value: "chat", label: "Chat" },
-                        ]
-                      : form.type === "image"
-                      ? [
-                          { value: "generation", label: "Generation" },
-                          { value: "edit", label: "Edit" },
-                          { value: "variation", label: "Variation" },
-                        ]
-                      : []
+                    [
+                      {
+                        value: "openai",
+                        label: "openai",
+                      },
+                      {
+                        value: "gemini",
+                        label: "gemini",
+                      },
+                      {
+                        value: "anthropic",
+                        label: "anthropic",
+                      },
+                    ] ?? []
                   }
-                  value={form.request}
-                  setValue={(value) => setForm({ ...form, request: value })}
+                  value={form.llm}
+                  setValue={(value) => handleFormChange("llm", value)}
                 />
               </div>
               <div className="flex flex-col gap-1.5 mt-6 text-sm">
@@ -232,24 +581,25 @@ const RequestBody: React.FC = () => {
                   placeholder="Select model..."
                   searchstring="Search model..."
                   options={
-                    form.request === "chat"
+                    form.llm === "openai"
                       ? ChatCompletionModels.map((model) => ({
                           value: model,
                           label: model,
                         }))
-                      : form.request === "completion"
-                      ? CompletionModels.map((model) => ({
+                      : form.llm === "anthropic"
+                      ? AnthropicMessageModels.map((model) => ({
                           value: model,
                           label: model,
                         }))
-                      : ["generation", "edit", "variation"].includes(
-                          form.request
-                        )
-                      ? [{ value: "dalle", label: "DallE" }]
-                      : []
+                      : [
+                          {
+                            value: "gemini-pro",
+                            label: "gemini-pro",
+                          },
+                        ] ?? []
                   }
                   value={form.model}
-                  setValue={(value) => setForm({ ...form, model: value })}
+                  setValue={(value) => handleFormChange("model", value)}
                 />
               </div>
             </>
@@ -259,7 +609,12 @@ const RequestBody: React.FC = () => {
             <div className="grid lg:grid-cols-2 gap-10 items-center mt-6">
               <div className="grid gap-4">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="temperature">Temperature</Label>
+                  <div className="flex items-center">
+                    <Label htmlFor="temperature" className="mr-2">
+                      Temperature
+                    </Label>
+                    <TooltipHover name={TEMPERATURE} />
+                  </div>
                   <span className="w-12 rounded-md border border-transparent px-2 py-0.5 text-right text-sm text-muted-foreground hover:border-border">
                     {form.temperature}
                   </span>
@@ -270,7 +625,7 @@ const RequestBody: React.FC = () => {
                   defaultValue={form.temperature}
                   step={0.1}
                   onValueChange={(value) =>
-                    setForm({ ...form, temperature: value })
+                    handleFormChange("temperature", value)
                   }
                   className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4"
                   aria-label="Temperature"
@@ -279,57 +634,101 @@ const RequestBody: React.FC = () => {
 
               <div className="grid gap-4">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="topp">Top P</Label>
+                  <div className="flex items-center">
+                    <Label htmlFor="top_p" className="mr-2">
+                      Top P
+                    </Label>
+                    <TooltipHover name={TOP_P} />
+                  </div>
                   <span className="w-12 rounded-md border border-transparent px-2 py-0.5 text-right text-sm text-muted-foreground hover:border-border">
-                    {form.topp}
+                    {form.top_p}
                   </span>
                 </div>
                 <Slider
-                  id="topp"
+                  id="top_p"
                   max={1}
-                  defaultValue={form.topp}
+                  defaultValue={form.top_p}
                   step={0.1}
-                  onValueChange={(value) => setForm({ ...form, topp: value })}
+                  onValueChange={(value) => handleFormChange("top_p", value)}
                   className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4"
                   aria-label="Top P"
                 />
               </div>
+
+              {["gemini", "anthropic"].includes(form.llm) && (
+                <div className="grid gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Label htmlFor="top_k" className="mr-2">
+                        Top K
+                      </Label>
+                      <TooltipHover name={TOP_K} />
+                    </div>
+                    <span className="w-12 rounded-md border border-transparent px-2 py-0.5 text-right text-sm text-muted-foreground hover:border-border">
+                      {form.top_k}
+                    </span>
+                  </div>
+                  <Slider
+                    id="top_k"
+                    max={40}
+                    defaultValue={form.top_k}
+                    step={1}
+                    onValueChange={(value) =>
+                      setForm({ ...form, top_k: value })
+                    }
+                    className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4"
+                    aria-label="Top K"
+                  />
+                </div>
+              )}
             </div>
           )}
 
           {tab === "output" && (
             <>
-              <div className="flex flex-col gap-1.5 mt-6">
-                <Label htmlFor="name">Number of responses</Label>
-                <Select>
-                  <SelectTrigger className="w-52">
-                    <SelectValue placeholder="Select a number" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Number of Responses</SelectLabel>
-                      <SelectItem value="1">1</SelectItem>
-                      <SelectItem value="2">2</SelectItem>
-                      <SelectItem value="3">3</SelectItem>
-                      <SelectItem value="4">4</SelectItem>
-                      <SelectItem value="5">5</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
+              {form.llm === "openai" && (
+                <div className="flex flex-col gap-1.5 mt-6">
+                  <Label htmlFor="name">Number of responses</Label>
+                  <Select
+                    value={form.n}
+                    onValueChange={(value) => handleFormChange("n", value)}
+                  >
+                    <SelectTrigger className="w-52">
+                      <SelectValue placeholder="Select a number" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Number of Responses</SelectLabel>
+                        <SelectItem value="1">1</SelectItem>
+                        <SelectItem value="2">2</SelectItem>
+                        <SelectItem value="3">3</SelectItem>
+                        <SelectItem value="4">4</SelectItem>
+                        <SelectItem value="5">5</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="grid gap-4 mt-6">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="max">Max Tokens</Label>
+                  <div className="flex items-center">
+                    <Label htmlFor="max_tokens" className="mr-2">
+                      Max Tokens
+                    </Label>
+                    <TooltipHover name={MAX_TOKENS} />
+                  </div>
                   <span className="w-12 rounded-md border border-transparent px-2 py-0.5 text-right text-sm text-muted-foreground hover:border-border">
-                    {form.max}
+                    {form.max_tokens}
                   </span>
                 </div>
                 <Slider
-                  id="max"
-                  max={4096}
-                  defaultValue={form.max}
+                  id="max_tokens"
+                  max={form.model === "gemini-pro" ? 8192 : 4096}
+                  defaultValue={form.max_tokens}
                   step={1}
-                  onValueChange={(value) => setForm({ ...form, max: value })}
+                  onValueChange={(value) =>
+                    handleFormChange("max_tokens", value)
+                  }
                   className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4"
                   aria-label="Max Tokens"
                 />
@@ -337,47 +736,76 @@ const RequestBody: React.FC = () => {
             </>
           )}
         </div>
-      </ResizablePanel>
-      <ResizableHandle withHandle className="mt-8" />
-      <ResizablePanel className="p-5 overflow-y-auto h-full">
-        <div className="flex items-center justify-between">
-          <p className="text-sm">Response</p>
-          <div className="flex items-center text-[10px] font-semibold gap-2 text-gray-500">
-            <div className="flex items-center gap-1">
-              <span>Input: </span>
-              <span className="text-primary">
-                {responseParams.tokenUsage.prompt}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span>Output: </span>
-              <span className="text-primary">
-                {responseParams.tokenUsage.completion}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span>Total: </span>
-              <span className="text-primary">
-                {responseParams.tokenUsage.total}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span>Time: </span>
-              <span className="text-primary">
-                {responseParams.responseTime} ms
-              </span>
+      </div>
+      <Separator className="mt-8" />
+
+      {requestLoading ? (
+        <ResponseLoader />
+      ) : (
+        <div className="p-3 md:p-5 h-full">
+          <div className="flex items-center justify-between">
+            <p className="text-sm">Response</p>
+            <div className="flex items-center text-[10px] font-semibold gap-2 text-gray-500">
+              <div className="flex items-center gap-1">
+                <span>Input: </span>
+                <span className="text-primary">
+                  {responseParams.tokenUsage.prompt}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span>Output: </span>
+                <span className="text-primary">
+                  {responseParams.tokenUsage.completion}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span>Total: </span>
+                <span className="text-primary">
+                  {responseParams.tokenUsage.total}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span>Time: </span>
+                <span className="text-primary">
+                  {formatMillisecondsToSeconds(responseParams.responseTime)} s
+                </span>
+              </div>
             </div>
           </div>
+          <div className="flex flex-col gap-4 mt-4">
+            {responses.map((response, index) => (
+              <div key={index} className="p-4 rounded-md bg-secondary text-sm">
+                <Markdown
+                  remarkPlugins={[remarkMath, remarkGfm]}
+                  rehypePlugins={[rehypeKatex]}
+                  components={{
+                    code(props) {
+                      const { children, className, node, ...rest } = props;
+                      const match = /language-(\w+)/.exec(className || "");
+                      return match ? (
+                        <SyntaxHighlighter
+                          PreTag="div"
+                          language={match[1]}
+                          style={vscDarkPlus}
+                        >
+                          {String(children).replace(/\n$/, "")}
+                        </SyntaxHighlighter>
+                      ) : (
+                        <code {...rest} className={className}>
+                          {children}
+                        </code>
+                      );
+                    },
+                  }}
+                >
+                  {response}
+                </Markdown>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="flex flex-col gap-4 mt-4">
-          {responses.map((response, index) => (
-            <div key={index} className="p-4 rounded-md bg-secondary text-sm">
-              {response}
-            </div>
-          ))}
-        </div>
-      </ResizablePanel>
-    </ResizablePanelGroup>
+      )}
+    </div>
   );
 };
 

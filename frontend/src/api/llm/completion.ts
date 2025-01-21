@@ -1,5 +1,4 @@
 import { LLM_REQUEST_API } from "@/constants/api";
-import { ICompletion } from "@/types/openai";
 
 const completion = async (idToken: string, name: string, input: any) => {
   const response = await fetch(LLM_REQUEST_API.COMPLETION, {

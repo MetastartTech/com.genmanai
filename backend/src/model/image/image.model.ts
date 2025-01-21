@@ -7,4 +7,14 @@ const getImageRequestsOfUser = async (
   return await ImageRequest.find({ user });
 };
 
-export { getImageRequestsOfUser };
+const getRequest = async (
+  user: string,
+  id: string
+): Promise<IImageRequest | null> => {
+  const request = await ImageRequest.findOne({ user, _id: id }).sort({
+    "versions.createdAt": -1,
+  });
+  return request;
+};
+
+export { getImageRequestsOfUser, getRequest };

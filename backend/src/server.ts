@@ -1,6 +1,6 @@
 import "dotenv/config";
 import mongoose from "mongoose";
-import initializeFBApp from "./config/firebase";
+import { initializeFBApp } from "./config/firebase";
 import server from "./app";
 
 mongoose.connection.once("open", () => {

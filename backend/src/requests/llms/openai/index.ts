@@ -1,4 +1,15 @@
-import { chatCompletion } from "./chat";
-import { completion } from "./completion";
+import {
+  chatCompletion,
+  modifyChatCompletion,
+  editChatCompletionName,
+  deleteChatCompletion,
+} from "./chat";
+//import { completion } from "./completion";
 
-export { chatCompletion, completion };
+export {
+  chatCompletion,
+  modifyChatCompletion,
+  //completion,
+  editChatCompletionName,
+  deleteChatCompletion,
+};

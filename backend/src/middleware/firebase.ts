@@ -33,7 +33,12 @@ export const firebaseAuthMiddleware = async (
           email: userRecord.email,
           fullName: userRecord.displayName,
           displayPicture: userRecord.photoURL,
+          creditsWallet: {
+            llm: 10,
+            image: 3,
+          },
         });
+
         await user.save();
       }
 
@@ -44,6 +49,6 @@ export const firebaseAuthMiddleware = async (
     }
   } catch (error) {
     console.error("Firebase authentication error:", error);
-    return res.status(403).json({ error: "Unauthorized" });
+    return res.status(403).json({ error: "Unauthorized", fbError: error });
   }
 };
