@@ -1,0 +1,41 @@
+{
+  "name": "ai.stealth.server",
+  "version": "1.0.0",
+  "description": "Prompt Testing tool",
+  "main": "server.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "tsc": "tsc",
+    "dev": "ts-node-dev --respawn --transpile-only ./src/server.ts",
+    "start": "rm -rf dist && mkdir dist && tsc && cp ./.env ./dist/.env && node ./dist/src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/StealthPrompt/ai.stealth.web.git"
+  },
+  "author": "Narasimha, Vivek",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/StealthPrompt/ai.stealth.web/issues"
+  },
+  "homepage": "https://github.com/StealthPrompt/ai.stealth.web#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "firebase-admin": "^11.10.1",
+    "jimp": "^0.3.5",
+    "mongoose": "^7.5.1",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "openai": "^4.6.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.14",
+    "@types/express": "^4.17.17",
+    "@types/morgan": "^1.9.5",
+    "@types/multer": "^1.4.7",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.2.2"
+  }
+}
